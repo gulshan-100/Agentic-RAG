@@ -62,6 +62,50 @@ The app will open at `http://localhost:8501` (local) or your Streamlit Cloud URL
 
 ## 📁 Architecture Overview
 
+### 🔄 Workflow Diagram
+
+```mermaid
+graph TD
+    A[User Query] --> B[Input Guard Agent]
+    B --> C{Query Safe?}
+    C -->|Yes| D[Query Rewriter Agent]
+    C -->|No| E[❌ Rejected Query]
+    
+    D --> F[Document Retriever Agent]
+    F --> G[Vector Store Search]
+    G --> H[Retrieved Documents]
+    
+    H --> I[Answer Generator Agent]
+    I --> J[Generated Answer]
+    
+    J --> K[Grounding Check Agent]
+    K --> L{Answer Grounded?}
+    L -->|Yes| M[Answer Evaluator Agent]
+    L -->|No| N[❌ Ungrounded Answer]
+    
+    M --> O{Good Quality?}
+    O -->|Yes| P[Output Guard Agent]
+    O -->|No| Q{Max Iterations?}
+    
+    Q -->|No| R[Refine Query]
+    R --> D
+    Q -->|Yes| S[❌ Max Attempts Reached]
+    
+    P --> T{Output Safe?}
+    T -->|Yes| U[Memory Manager Agent]
+    T -->|No| V[❌ Unsafe Output]
+    
+    U --> W[Update Conversation History]
+    W --> X[✅ Final Answer to User]
+    
+    style A fill:#e1f5fe
+    style X fill:#c8e6c9
+    style E fill:#ffcdd2
+    style N fill:#ffcdd2
+    style S fill:#ffcdd2
+    style V fill:#ffcdd2
+```
+
 **Core Components:**
 - **Streamlit Interface**: Web-based user interface for document upload and chat
 - **Agent System**: Eight specialized AI agents for different processing tasks
