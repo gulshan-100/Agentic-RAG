@@ -204,17 +204,21 @@ class QueryOptimizerAgent(BaseAgent):
             
             REFINEMENT MODE: The previous answer was inadequate. Improve the query.
             
-            Original Question: {state['question']}
+            **IMPORTANT**: Stay focused on the ORIGINAL user question. Don't make the query too broad or generic.
+            
+            Original User Question: {state['question']}
             Previous Query: {state.get('rewritten_question', state['question'])}
             Evaluation Feedback: {feedback}
             Agent Communications: {context_from_agents}
             Conversation History: {chat_history}
             
-            Create a superior query that:
-            1. Addresses the evaluation feedback
-            2. Uses different keywords and synonyms
-            3. Focuses on specific information needs
-            4. Avoids previous  mistakes
+            Create an improved query that:
+            1. Stays true to what the user actually asked
+            2. Uses different keywords or synonyms to improve retrieval
+            3. Remains specific and targeted (don't make it broader or more generic)
+            4. Helps find the same information but from different angles
+            
+            AVOID: Making the query too vague, generic, or broader than the original question
             
             Output ONLY the improved query, nothing else:
             """
@@ -498,6 +502,28 @@ class QualityEvaluatorAgent(BaseAgent):
         """Evaluate answer quality with autonomous refinement decision"""
         self.performance_metrics["calls"] += 1
         
+        answer = state.get('answer', '')
+        current_iteration = state.get('iteration_count', 0)
+        
+        # Pre-check: If already refined once and answer has specific content, accept it
+        if current_iteration > 0 and len(answer) > 50:
+            # Check if answer contains specific information (numbers, specific terms)
+            import re
+            has_numbers = bool(re.search(r'\d+', answer))
+            not_generic = "information not found" not in answer.lower()
+            
+            if has_numbers and not_generic:
+                self.log_decision("auto_accept_refined_with_specifics", 0.85)
+                state = self.update_confidence(state, 0.85)
+                state = self.send_message(state, "OutputGuard", 
+                                        "Answer contains specific information after refinement, approved")
+                self.performance_metrics["successes"] += 1
+                return {
+                    **state,
+                    "evaluation_feedback": "Answer contains specific information and has been refined",
+                    "needs_refinement": False
+                }
+        
         # Check messages from other agents
         agent_messages = self.get_messages_for_me(state)
         agent_feedback = "\n".join([f"{msg['from']}: {msg['message']}" for msg in agent_messages])
@@ -506,24 +532,31 @@ class QualityEvaluatorAgent(BaseAgent):
         
         TASK: Evaluate the quality of the generated answer and decide if refinement is needed.
         
-        Original Question: {state['question']}
-        Optimized Query: {state['rewritten_question']}
+        **IMPORTANT**: Focus on the ORIGINAL user question, not the optimized query.
+        The optimized query is just for document retrieval - don't expect the answer to match it exactly.
+        
+        Original User Question: {state['question']}
+        Optimized Query (for retrieval only): {state['rewritten_question']}
         Generated Answer: {state['answer']}
         Current Iteration: {state.get('iteration_count', 0)}/{self.max_iterations}
         Agent Feedback: {agent_feedback}
         
         EVALUATION CRITERIA:
-        1. Relevance: Does it directly answer what was asked?
-        2. Accuracy: Is information correct based on context?
-        3. Completeness: Does it address the specific question?
-        4. Clarity: Is it clear and understandable?
+        1. Does the answer directly address the ORIGINAL user question?
+        2. Is the information accurate and specific?
+        3. Is it clear and understandable?
+        4. Does it provide the information the user actually asked for?
         
         DECISION GUIDELINES:
-        - ACCEPT: Answer directly addresses the question with adequate information
-        - REFINE: Answer is vague, incomplete, or doesn't address the question
+        - ACCEPT if: Answer provides specific, accurate information that addresses what the user asked
+        - REFINE if: Answer is vague, says "information not found" when it should be available, or is clearly wrong
         
-        Do NOT expect more information than the user requested.
-        If user asked a simple question and got a direct answer, ACCEPT it.
+        CRITICAL RULES:
+        - If the answer contains specific numbers/facts that answer the user's question → ACCEPT
+        - Do NOT refine just because the answer is narrow in scope - that's often correct!
+        - Do NOT expect the answer to match the optimized query's breadth
+        - If user asked "how many?" and got a number → ACCEPT
+        - Only refine if the answer is truly inadequate or incorrect
         
         Respond with:
         DECISION: [ACCEPT/REFINE]
@@ -555,6 +588,11 @@ class QualityEvaluatorAgent(BaseAgent):
                     feedback = line.split(":", 1)[1].strip()
             
             current_iteration = state.get('iteration_count', 0)
+            
+            # Additional safety: Don't refine if we're at max iterations
+            if current_iteration >= self.max_iterations:
+                decision = "ACCEPT"
+                feedback = f"Maximum iterations ({self.max_iterations}) reached, accepting current answer"
             
             # Autonomous decision on refinement
             needs_refinement = (
