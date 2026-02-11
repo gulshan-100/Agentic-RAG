@@ -1,0 +1,29 @@
+# Core Dependencies
+streamlit>=1.28.0
+langchain>=0.0.350
+langchain-openai>=0.0.5
+langchain-community>=0.0.10
+langchain-core>=0.1.0
+langchain-text-splitters>=0.0.1
+langgraph>=0.0.20
+
+# Vector Store & Search
+faiss-cpu>=1.7.4
+numpy>=1.24.0
+
+# Document Processing
+pypdf>=3.17.0
+python-docx>=0.8.11
+unstructured>=0.10.25
+openpyxl>=3.1.2
+pandas>=2.0.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# Additional Dependencies for Unstructured
+python-magic-bin>=0.4.14; platform_system == "Windows"
+python-magic>=0.4.27; platform_system != "Windows"
+
+# Optional: For better performance
+sentence-transformers>=2.2.2
