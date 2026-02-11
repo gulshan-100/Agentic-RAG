@@ -1,5 +1,7 @@
 # 🤖 Multi-Agent RAG System
 
+![Multi-Agent RAG Demo](image.png)
+
 A truly multi-agentic AI Retrieval-Augmented Generation system where each agent is an independent entity with its own LLM instance, specialized configuration, and autonomous decision-making capabilities.
 
 ## 🚀 Quick Start
