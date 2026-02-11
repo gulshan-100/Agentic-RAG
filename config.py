@@ -1,13 +1,13 @@
 """
-Configuration file for Agentic RAG Application
-Contains all settings, constants, and environment variables
+Configuration file for Multi-Agent RAG Application
+Contains all settings, constants, and agent-specific configurations
 """
 
 import os
-from typing import List
+from typing import List, Dict
 
 class Config:
-    """Configuration class for the RAG application"""
+    """Configuration class for the multi-agent RAG application"""
     
     # OpenAI Configuration - Support both environment and Streamlit secrets
     @classmethod
@@ -28,7 +28,51 @@ class Config:
     
     OPENAI_API_KEY = get_openai_key.__func__()
     
-    # Model Configuration
+    # Agent-Specific Model Configurations
+    AGENT_CONFIGS = {
+        "security_guard": {
+            "model": "gpt-4o",
+            "temperature": 0.1,
+            "description": "Security-focused agent with adversarial thinking"
+        },
+        "query_optimizer": {
+            "model": "gpt-4o",
+            "temperature": 0.4,
+            "description": "Query optimization with creative NLP expertise"
+        },
+        "document_retriever": {
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.0,
+            "description": "Vector search and document retrieval specialist"
+        },
+        "answer_generator": {
+            "model": "gpt-4o",
+            "temperature": 0.3,
+            "description": "Deep reasoning for answer synthesis"
+        },
+        "grounding_validator": {
+            "model": "gpt-4o",
+            "temperature": 0.1,
+            "description": "Fact-checking and grounding validation"
+        },
+        "quality_evaluator": {
+            "model": "gpt-4o",
+            "temperature": 0.2,
+            "description": "Metacognitive quality assessment"
+        },
+        "output_guard": {
+            "model": "gpt-4o",
+            "temperature": 0.1,
+            "description": "Final safety and content filtering"
+        },
+        "memory_manager": {
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.0,
+            "description": "Conversation history management"
+        }
+    }
+    
+    # Base Model Configuration (fallback)
     EMBEDDING_MODEL = "text-embedding-3-large"
     CHAT_MODEL = "gpt-4o"
     TEMPERATURE = 0.2
@@ -41,8 +85,14 @@ class Config:
     SEARCH_TYPE = "mmr"
     RETRIEVAL_K = 5
     
-    # Workflow Configuration  
+    # Multi-Agent Workflow Configuration
     MAX_ITERATIONS = 2
+    ENABLE_AGENT_COMMUNICATION = True
+    TRACK_AGENT_METRICS = True
+    
+    # Agent Performance Thresholds
+    MIN_CONFIDENCE_THRESHOLD = 0.60  # Minimum confidence for accepting outputs
+    REFINEMENT_CONFIDENCE_THRESHOLD = 0.75  # Below this, consider refinement
     
     # Safety Configuration
     BLOCKED_PATTERNS = [
@@ -69,10 +119,12 @@ class Config:
     ]
     
     # Streamlit Configuration
-    APP_TITLE = "🤖 Agentic RAG System"
+    APP_TITLE = "🤖 Multi-Agent RAG System"
     APP_DESCRIPTION = """
-    A sophisticated orchestrated AI Retrieval-Augmented Generation system that demonstrates 
-    true agentic behavior through autonomous decision-making, multi-step reasoning, and quality validation.
+    A truly multi-agentic AI Retrieval-Augmented Generation system where each agent is 
+    an independent entity with its own LLM instance, specialized configuration, and 
+    autonomous decision-making capabilities. Features inter-agent communication, 
+    performance tracking, and coordinated workflow orchestration.
     """
     
     # File Upload Configuration

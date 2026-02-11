@@ -1,6 +1,6 @@
 """
-Streamlit Web Interface for Agentic RAG System
-A user-friendly interface for the orchestrated AI RAG application
+Streamlit Web Interface for Multi-Agent RAG System
+A user-friendly interface for the truly multi-agentic AI RAG application
 """
 
 import streamlit as st
@@ -15,7 +15,7 @@ load_dotenv()
 
 # Page configuration
 st.set_page_config(
-    page_title="Agentic RAG System",
+    page_title="Multi-Agent RAG System",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -42,11 +42,13 @@ def main():
     initialize_session_state()
     
     # App header
-    st.title("🤖 Agentic RAG System")
+    st.title("🤖 Multi-Agent RAG System")
     st.markdown("""
-    A sophisticated orchestrated AI Retrieval-Augmented Generation system with autonomous decision-making, 
-    multi-step reasoning, and quality validation.
+    A truly multi-agentic AI Retrieval-Augmented Generation system where each agent is 
+    an **independent entity** with its own LLM instance, specialized configuration, and 
+    autonomous decision-making capabilities.
     """)
+    
     
     # Check API key setup
     api_key = os.getenv("OPENAI_API_KEY")
@@ -93,6 +95,24 @@ def create_sidebar():
         if st.expander("🔄 View Workflow"):
             if st.session_state.workflow:
                 st.text(st.session_state.workflow.get_workflow_visualization())
+        
+        # Multi-Agent Metrics
+        if st.expander("📊 Agent Performance Metrics"):
+            if st.session_state.workflow:
+                metrics = st.session_state.workflow.get_agent_metrics()
+                for agent_name, agent_metrics in metrics.items():
+                    st.markdown(f"**{agent_name.replace('_', ' ').title()}**")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Calls", agent_metrics["calls"])
+                    with col2:
+                        st.metric("Success", agent_metrics["successes"])
+                    with col3:
+                        success_rate = agent_metrics["success_rate"] * 100
+                        st.metric("Rate", f"{success_rate:.1f}%")
+                    st.divider()
+            else:
+                st.info("Process documents first to see agent metrics")
 
 def upload_files_interface():
     """Interface for uploading files"""
@@ -223,24 +243,39 @@ def display_system_status():
 def welcome_screen():
     """Display welcome screen when no documents are loaded"""
     st.markdown("""
-    ## 🚀 Welcome to Agentic RAG System
+    ## 🚀 Welcome to Multi-Agent RAG System
     
-    This advanced AI system uses **orchestrated AI architecture** to provide intelligent, context-aware responses to your questions.
+    This is a **truly multi-agentic AI system** where each agent is an independent entity with its own LLM instance, specialized configuration, and autonomous decision-making capabilities.
     
-    ### 🌟 Key Features:
-    - **8-Agent Pipeline**: Input validation, query optimization, retrieval, generation, evaluation, and safety
-    - **Iterative Refinement**: Self-improving answers through autonomous evaluation
-    - **Multi-Format Support**: PDF, DOCX, PPTX, TXT, XLSX files
-    - **FAISS Vector Search**: High-performance semantic similarity matching
-    - **Safety Controls**: Input/output filtering and grounding validation
+    ### 🌟 Multi-Agent Architecture:
+    - **8 Independent Agents**: Each with dedicated LLM, custom temperature, and specialized role
+    - **Inter-Agent Communication**: Agents send messages and coordinate decisions
+    - **Autonomous Decision-Making**: Each agent makes independent decisions based on its expertise
+    - **Performance Tracking**: Real-time metrics for each agent's success rate
+    - **Iterative Refinement**: QualityEvaluator autonomously decides when refinement is needed
+    
+    ### 🤖 The Agent Team:
+    1. **SecurityGuard** (GPT-4o, T=0.1) - Threat detection specialist
+    2. **QueryOptimizer** (GPT-4o, T=0.4) - NLP optimization expert
+    3. **DocumentRetriever** (GPT-3.5, T=0.0) - Vector search specialist
+    4. **AnswerGenerator** (GPT-4o, T=0.3) - Deep reasoning synthesizer
+    5. **GroundingValidator** (GPT-4o, T=0.1) - Fact-checking agent
+    6. **QualityEvaluator** (GPT-4o, T=0.2) - Metacognitive assessor
+    7. **OutputGuard** (GPT-4o, T=0.1) - Final safety validator
+    8. **MemoryManager** (GPT-3.5, T=0.0) - Context manager
     
     ### 📋 Getting Started:
     1. **Upload documents** or **load from folder** using the sidebar
     2. **Wait for processing** to complete (vector store creation)
-    3. **Start asking questions** about your documents
+    3. **Start asking questions** - watch agents collaborate!
+    4. **View agent metrics** in the sidebar to see performance
     
-    ### 🤖 How It Works:
-    The system uses a sophisticated orchestrated workflow that processes your questions through multiple AI agents, each specialized for specific tasks like security validation, query optimization, document retrieval, answer generation, and quality evaluation.
+    ### ✨ What Makes This Multi-Agentic:
+    - Each agent has its **own LLM instance** (not shared)
+    - Agents use **different models and temperatures** optimized for their role
+    - Agents **communicate with each other** via message passing
+    - Each agent **tracks its own performance** and decision history
+    - Agents make **autonomous decisions** independent of other agents
     """)
     
     # Example questions
@@ -282,39 +317,66 @@ def display_chat_history():
                 st.write(message[11:])  # Remove "Assistant: " prefix
 
 def process_question(question):
-    """Process user question through the agentic workflow"""
+    """Process user question through the multi-agent workflow"""
     # Add user message to chat
     with st.chat_message("user"):
         st.write(question)
     
     # Process through workflow
     with st.chat_message("assistant"):
-        with st.spinner("🤖 Processing through agentic workflow..."):
+        with st.spinner("🤖 Multi-agent system processing..."):
             # Create initial state
             initial_state = create_initial_state(question, st.session_state.chat_history)
             
-            # Run workflow
+            # Run multi-agent workflow
             result = st.session_state.workflow.invoke(initial_state)
             
             # Display answer
             answer = result["answer"]
             st.write(answer)
             
-            # Display workflow information in expander
-            with st.expander("🔍 Workflow Details"):
-                col1, col2 = st.columns(2)
+            # Display multi-agent workflow information in expander
+            with st.expander("🔍 Multi-Agent Workflow Details"):
+                tab1, tab2, tab3 = st.tabs(["Query Processing", "Agent Confidence", "Agent Communications"])
                 
-                with col1:
-                    st.metric("Iterations", result.get("iteration_count", 0))
-                    st.write("**Rewritten Query:**")
-                    st.write(result.get("rewritten_question", "N/A"))
-                
-                with col2:
-                    st.write("**Evaluation Feedback:**")
-                    st.write(result.get("evaluation_feedback", "No feedback"))
+                with tab1:
+                    col1, col2 = st.columns(2)
                     
-                if result.get("iteration_count", 0) > 0:
-                    st.info(f"✨ Answer was refined {result['iteration_count']} time(s) for better quality!")
+                    with col1:
+                        st.metric("Refinement Iterations", result.get("iteration_count", 0))
+                        st.write("**Original Query:**")
+                        st.write(question)
+                    
+                    with col2:
+                        st.write("**Optimized Query:**")
+                        st.write(result.get("rewritten_question", "N/A"))
+                        st.write("**Evaluation Feedback:**")
+                        st.write(result.get("evaluation_feedback", "No feedback"))
+                    
+                    if result.get("iteration_count", 0) > 0:
+                        st.info(f"✨ Answer was autonomously refined {result['iteration_count']} time(s) by QualityEvaluator agent!")
+                
+                with tab2:
+                    st.write("**Agent Confidence Scores:**")
+                    confidence_scores = result.get("confidence_scores", {})
+                    if confidence_scores:
+                        for agent, score in confidence_scores.items():
+                            col1, col2 = st.columns([3, 1])
+                            with col1:
+                                st.progress(score, text=agent)
+                            with col2:
+                                st.write(f"{score:.2%}")
+                    else:
+                        st.info("No confidence scores available")
+                
+                with tab3:
+                    st.write("**Inter-Agent Communications:**")
+                    communications = result.get("agent_communications", [])
+                    if communications:
+                        for msg in communications:
+                            st.markdown(f"**{msg['from']}** → **{msg['to']}**: {msg['message']}")
+                    else:
+                        st.info("No inter-agent communications recorded")
     
     # Update session state
     st.session_state.chat_history = result["chat_history"]

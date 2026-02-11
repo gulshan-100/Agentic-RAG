@@ -1,15 +1,18 @@
-# 🤖 Agentic RAG System
+# 🤖 Multi-Agent RAG System
 
-A sophisticated collaborative AI Retrieval-Augmented Generation system with Streamlit interface. Upload documents and ask questions - the system processes your queries through 8 specialized AI agents for intelligent, accurate responses.
+A **truly multi-agentic** AI Retrieval-Augmented Generation system where each agent is an independent entity with its own LLM instance, specialized configuration, and autonomous decision-making capabilities. Upload documents and ask questions - watch 8 independent AI agents collaborate to provide intelligent, accurate responses.
 
-## 🌟 Features
+## 🌟 Key Multi-Agent Features
 
-- **Orchestrated AI Architecture**: 8 AI agents working together (input validation, query optimization, document retrieval, answer generation, quality evaluation, safety checks)
-- **Iterative Refinement**: System automatically improves answers through self-evaluation (up to 2 iterations)
+- **8 Independent Agents**: Each agent has its own dedicated LLM instance (not shared!)
+- **Specialized Configurations**: Different models (GPT-4o, GPT-3.5) and temperatures optimized per agent role
+- **Inter-Agent Communication**: Agents send messages and coordinate decisions via message passing
+- **Autonomous Decision-Making**: Each agent independently evaluates and makes decisions based on its expertise
+- **Performance Tracking**: Real-time metrics tracking each agent's calls, successes, and failure rates
+- **Iterative Refinement**: QualityEvaluator agent autonomously decides when answer refinement is needed
 - **Multiple Document Types**: PDF, DOCX, PPTX, TXT, XLSX support
 - **FAISS Vector Search**: High-performance semantic similarity matching
-- **Safety Controls**: Input/output filtering and content validation
-- **Web Interface**: Easy-to-use Streamlit interface with chat functionality
+- **Web Interface**: Streamlit interface with agent metrics dashboard
 
 ## 🚀 Quick Start
 
@@ -58,7 +61,59 @@ The app will open at `http://localhost:8501` (local) or your Streamlit Cloud URL
 1. **Upload Documents**: Use the sidebar to upload files or load from a folder
 2. **Wait for Processing**: The system builds a vector database from your documents
 3. **Ask Questions**: Type questions about your documents in the chat
-4. **Get Smart Answers**: The system processes through all agents and may refine answers automatically
+4. **Watch Agents Collaborate**: View real-time agent metrics and inter-agent communications
+5. **See Answer Evolution**: In the "Agent Communications" tab, see how answers are generated and refined across iterations
+6. **Monitor Performance**: Check agent confidence scores and success rates in the sidebar
+
+## 🔬 True Multi-Agent Architecture Explained
+
+### What's Different from a Sequential Pipeline?
+
+**❌ NOT Multi-Agent (Sequential Pipeline):**
+```python
+# Single LLM instance used for all steps
+llm = ChatOpenAI(model="gpt-4o", temperature=0.2)
+
+def step1(input): return llm.invoke("Do step 1: " + input)
+def step2(input): return llm.invoke("Do step 2: " + input)
+def step3(input): return llm.invoke("Do step 3: " + input)
+```
+- Same LLM called with different prompts
+- No agent independence
+- No inter-agent communication
+- No specialized configurations
+
+**✅ True Multi-Agent (This System):**
+```python
+# Each agent has its OWN LLM instance with specialized config
+class SecurityGuard(BaseAgent):
+    def __init__(self):
+        self.llm = ChatOpenAI(model="gpt-4o", temperature=0.1)
+        
+class QueryOptimizer(BaseAgent):
+    def __init__(self):
+        self.llm = ChatOpenAI(model="gpt-4o", temperature=0.4)
+        
+class DocumentRetriever(BaseAgent):
+    def __init__(self):
+        self.llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.0)
+```
+- Each agent has independent LLM instance
+- Specialized models and temperatures
+- Inter-agent message passing
+- Autonomous decision-making
+- Individual performance tracking
+
+### Verification in Code:
+```python
+from agents import MultiAgentSystem
+
+system = MultiAgentSystem()
+agent1_llm_id = id(system.agents["security_guard"].llm)
+agent2_llm_id = id(system.agents["query_optimizer"].llm)
+
+print(agent1_llm_id != agent2_llm_id)  # True - Different instances!
+```
 
 ## 📁 Architecture Overview
 
@@ -107,20 +162,35 @@ graph TD
 ```
 
 **Core Components:**
-- **Streamlit Interface**: Web-based user interface for document upload and chat
-- **Agent System**: Eight specialized AI agents for different processing tasks
-- **Workflow Orchestration**: LangGraph coordinates agent execution and decision flow
+- **Streamlit Interface**: Web UI for document upload, chat, and real-time agent metrics
+- **Multi-Agent System**: Eight independent agents, each with dedicated LLM and specialized config
+- **LangGraph Orchestration**: Coordinates independent agents with conditional decision flow
+- **Inter-Agent Communication**: Message passing system for agent coordination
 - **Document Processing**: Multi-format document loading and text chunking
 - **Vector Database**: FAISS-powered semantic search and retrieval
-- **Configuration Management**: Centralized settings and environment handling
+- **Agent-Specific Configuration**: Each agent configured with optimal model and temperature
 
 ## ⚙️ Configuration
 
-Edit `config.py` to customize:
-- **Models**: Change OpenAI models (default: GPT-4o, text-embedding-3-large)
-- **Chunk Size**: Document splitting parameters (default: 1000 chars)
-- **Retrieval**: Number of documents to retrieve (default: 5)
-- **Iterations**: Max refinement loops (default: 2)
+Edit [config.py](config.py) to customize:
+
+### Agent-Specific Configurations:
+Each agent can be configured with different models and temperatures:
+```python
+AGENT_CONFIGS = {
+    "security_guard": {"model": "gpt-4o", "temperature": 0.1},
+    "query_optimizer": {"model": "gpt-4o", "temperature": 0.4},
+    "document_retriever": {"model": "gpt-3.5-turbo", "temperature": 0.0},
+    # ... more agents
+}
+```
+
+### General Settings:
+- **Embedding Model**: text-embedding-3-large
+- **Chunk Size**: 1000 characters (with 200 overlap)
+- **Retrieval**: 5 documents per query (MMR search)
+- **Max Iterations**: 2 refinement loops
+- **Confidence Thresholds**: Minimum 0.60, Refinement trigger 0.75
 
 ## 🛠️ Requirements
 
@@ -159,20 +229,113 @@ Edit `config.py` to customize:
 - "How do I apply for this position?" 
 - "What are the important dates mentioned?"
 
-## 🔄 How It Works
+## 📊 Viewing Multi-Agent Metrics
 
-The system processes your questions through 8 AI agents:
+After processing questions, you can view:
+- **Agent Performance Metrics** (sidebar): Success rates, call counts, failures per agent
+- **Agent Confidence Scores** (answer details): Each agent's confidence in its output (0.0-1.0)
+- **Inter-Agent Communications** (answer details): Messages exchanged between agents including:
+  - Query optimization notifications
+  - Document retrieval counts
+  - **Generated answer previews** for each iteration
+  - Validation warnings and feedback
+  - Refinement requests between agents
+- **Workflow Iterations** (answer details): How many refinement loops occurred and why
 
-1. **Input Guard** - Validates query safety
-2. **Query Rewriter** - Optimizes for better retrieval
-3. **Document Retriever** - Finds relevant content using FAISS
-4. **Answer Generator** - Creates responses based on context
-5. **Grounding Check** - Validates accuracy against sources
-6. **Answer Evaluator** - Assesses quality and triggers refinement if needed
-7. **Output Guard** - Final safety validation
-8. **Memory Manager** - Updates conversation history
+### 🔍 Inter-Agent Communication Examples:
+- **QueryOptimizer → DocumentRetriever**: "Optimized query ready: [query text]"
+- **DocumentRetriever → AnswerGenerator**: "Retrieved 5 relevant documents"
+- **AnswerGenerator → GroundingValidator**: "Iteration 0 - Generated answer (342 chars): [answer preview]"
+- **GroundingValidator → QualityEvaluator**: "Answer contains contradictions with context"
+- **QualityEvaluator → QueryOptimizer**: "Requesting query refinement: Answer lacks specificity"
+- **OutputGuard → MemoryManager**: "Output approved, ready for delivery"
 
-If the answer needs improvement, the system automatically refines the query and tries again (up to 2 iterations).
+**Example: Iterative Refinement in Action**
+```
+Iteration 0:
+  AnswerGenerator: "Iteration 0 - Generated answer (156 chars): The document mentions 
+  several requirements including..."
+  
+Iteration 1 (after QualityEvaluator requests refinement):
+  AnswerGenerator: "Iteration 1 - Generated answer (289 chars): Based on the documents, 
+  there are three main requirements: 1) Bachelor's degree in..."
+```
+This lets you see how the answer improves across iterations!
+
+## 🎯 Key Differentiators
+
+This system is **truly multi-agentic** because:
+
+1. **Independent LLM Instances**: Each agent instantiates its own `ChatOpenAI` object
+2. **Specialized Models**: Different agents use different models (GPT-4o vs GPT-3.5)
+3. **Varied Temperatures**: Each agent has temperature optimized for its task
+4. **Agent Communication**: Built-in message passing system between agents with rich context sharing
+5. **Autonomous Decisions**: Each agent independently evaluates and decides
+6. **Performance Isolation**: Each agent tracks its own metrics separately
+7. **Decision History**: Each agent maintains its own decision log
+8. **Confidence Scoring**: Each agent reports confidence independently
+9. **Transparent Iterations**: See actual generated answers for each refinement iteration
+
+**Not just**: One LLM called sequentially with different prompts ❌  
+**But rather**: Eight independent agents with specialized configurations collaborating via messages ✅
+
+## 🔄 How The Multi-Agent System Works
+
+### The Agent Team (8 Independent Agents)
+
+1. **SecurityGuard Agent** (GPT-4o, T=0.1)
+   - Adversarial threat detection and input validation
+   - Uses low temperature for consistent security decisions
+   - Sends alerts to OutputGuard if threats detected
+
+2. **QueryOptimizer Agent** (GPT-4o, T=0.4)
+   - NLP-based query optimization and expansion
+   - Higher temperature for creative query reformulation
+   - Receives refinement requests from QualityEvaluator
+
+3. **DocumentRetriever Agent** (GPT-3.5, T=0.0)
+   - Vector similarity search specialist
+   - Lightweight model for retrieval operations
+   - Notifies AnswerGenerator about retrieved document count
+
+4. **AnswerGenerator Agent** (GPT-4o, T=0.3)
+   - Deep reasoning for answer synthesis
+   - Balanced temperature for accuracy and natural language
+   - Receives context info from DocumentRetriever
+   - Sends answer preview to GroundingValidator (includes iteration number and first 200 chars)
+
+5. **GroundingValidator Agent** (GPT-4o, T=0.1)
+   - Fact-checking and hallucination detection
+   - Low temperature for objective validation
+   - Sends warnings to QualityEvaluator if issues found
+
+6. **QualityEvaluator Agent** (GPT-4o, T=0.2)
+   - Metacognitive quality assessment
+   - Autonomously decides if refinement needed
+   - Coordinates with QueryOptimizer for improvements
+
+7. **OutputGuard Agent** (GPT-4o, T=0.1)
+   - Final safety validation and content filtering
+   - Receives safety concerns from other agents
+   - Notifies MemoryManager when output approved
+
+8. **MemoryManager Agent** (GPT-3.5, T=0.0)
+   - Context and conversation history management
+   - Lightweight model for memory operations
+   - Maintains conversation state
+
+### 🎯 What Makes This Truly Multi-Agentic:
+
+✅ **Independent LLM Instances**: Each agent has its own `ChatOpenAI` object (not shared)
+✅ **Specialized Configuration**: Different models and temperatures per agent role
+✅ **Inter-Agent Communication**: Agents exchange messages via `send_message()` and `get_messages_for_me()`
+✅ **Autonomous Decisions**: Each agent independently evaluates and decides
+✅ **Performance Metrics**: Each agent tracks its own success/failure rates
+✅ **Decision History**: Each agent maintains its own decision log
+✅ **Confidence Scoring**: Each agent reports confidence in its outputs
+
+### 🔁 Iterative Refinement:
+If QualityEvaluator determines the answer needs improvement, it autonomously sends a refinement request to QueryOptimizer, which optimizes the query and the workflow loops back (up to 2 iterations).
 
 ## 📄 License
 
@@ -180,4 +343,12 @@ This project is open source under the MIT License.
 
 ---
 
-**Ready to experience intelligent document Q&A with autonomous AI agents!** 🚀
+**Experience truly autonomous multi-agent AI collaboration!** 🤖🤝🤖
+
+Each agent brings its own expertise, makes independent decisions, and communicates with teammates to deliver intelligent document Q&A. Watch them work together in real-time with full transparency into:
+- Each agent's decision-making process
+- Real-time performance metrics
+- Inter-agent message exchanges
+- Answer evolution across refinement iterations
+
+See the magic of true multi-agent collaboration! 🚀✨

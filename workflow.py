@@ -1,70 +1,92 @@
 """
-Workflow management using LangGraph for the Agentic RAG System
-Orchestrates the coordinated AI pipeline with conditional logic and iterative refinement
+Multi-Agent Workflow Orchestration using LangGraph
+Coordinates independent agents with inter-agent communication and decision flow
 """
 
 from langgraph.graph import StateGraph, END
-from agents import AgenticRAGAgents, AgentState
+from agents import MultiAgentSystem, AgentState
 
-class AgenticRAGWorkflow:
+class MultiAgentRAGWorkflow:
     """
-    LangGraph workflow manager for the agentic RAG system
-    Coordinates multiple agents with iterative refinement capabilities
+    LangGraph workflow orchestrator for the multi-agent RAG system.
+    Each node represents an independent agent with its own LLM and decision-making.
     """
     
     def __init__(self, retriever=None):
         self.retriever = retriever
-        self.agents = AgenticRAGAgents(retriever)
+        self.agent_system = MultiAgentSystem(retriever)
         self.app = None
         self._build_workflow()
     
     def _build_workflow(self):
-        """Build the LangGraph workflow with all agents and conditional logic"""
+        """Build the LangGraph workflow with independent agent nodes"""
         
         workflow = StateGraph(AgentState)
         
-        # Add all agent nodes
-        workflow.add_node("input_guard", self.agents.input_guard)
-        workflow.add_node("rewrite", self.agents.rewrite_query)
-        workflow.add_node("retrieve", self.agents.retrieve_docs)
-        workflow.add_node("generate", self.agents.generate_answer)
-        workflow.add_node("grounding", self.agents.grounding_check)
-        workflow.add_node("evaluate", self.agents.evaluate_answer)
-        workflow.add_node("output_guard", self.agents.output_guard)
-        workflow.add_node("memory", self.agents.update_memory)
+        # Add agent execution nodes - each wraps an independent agent
+        workflow.add_node("security_guard", 
+                         lambda state: self.agent_system.get_agent("security_guard").execute(state))
+        
+        workflow.add_node("query_optimizer", 
+                         lambda state: self.agent_system.get_agent("query_optimizer").execute(state))
+        
+        workflow.add_node("document_retriever", 
+                         lambda state: self.agent_system.get_agent("document_retriever").execute(state))
+        
+        workflow.add_node("answer_generator", 
+                         lambda state: self.agent_system.get_agent("answer_generator").execute(state))
+        
+        workflow.add_node("grounding_validator", 
+                         lambda state: self.agent_system.get_agent("grounding_validator").execute(state))
+        
+        workflow.add_node("quality_evaluator", 
+                         lambda state: self.agent_system.get_agent("quality_evaluator").execute(state))
+        
+        workflow.add_node("output_guard", 
+                         lambda state: self.agent_system.get_agent("output_guard").execute(state))
+        
+        workflow.add_node("memory_manager", 
+                         lambda state: self.agent_system.get_agent("memory_manager").execute(state))
         
         # Set entry point
-        workflow.set_entry_point("input_guard")
+        workflow.set_entry_point("security_guard")
         
-        # Define linear workflow edges
-        workflow.add_edge("input_guard", "rewrite")
-        workflow.add_edge("rewrite", "retrieve")
-        workflow.add_edge("retrieve", "generate")
-        workflow.add_edge("generate", "grounding")
-        workflow.add_edge("grounding", "evaluate")
+        # Define workflow edges with agent coordination
+        workflow.add_edge("security_guard", "query_optimizer")
+        workflow.add_edge("query_optimizer", "document_retriever")
+        workflow.add_edge("document_retriever", "answer_generator")
+        workflow.add_edge("answer_generator", "grounding_validator")
+        workflow.add_edge("grounding_validator", "quality_evaluator")
         
-        # Conditional edge for iterative refinement
+        # Conditional edge for autonomous iterative refinement
+        # QualityEvaluator agent decides whether to refine or proceed
         workflow.add_conditional_edges(
-            "evaluate",
+            "quality_evaluator",
             self._should_refine,
             {
-                "refine": "rewrite",      # Loop back for refinement
-                "finish": "output_guard"  # Proceed to end
+                "refine": "query_optimizer",      # Loop back - QueryOptimizer gets feedback
+                "finish": "output_guard"          # Proceed to final validation
             }
         )
         
-        workflow.add_edge("output_guard", "memory")
-        workflow.add_edge("memory", END)
+        workflow.add_edge("output_guard", "memory_manager")
+        workflow.add_edge("memory_manager", END)
         
-        # Compile the workflow
+        # Compile the multi-agent workflow
         self.app = workflow.compile()
     
     def _should_refine(self, state: AgentState) -> str:
-        """Decision function for iterative refinement"""
+        """
+        Autonomous decision function for iterative refinement.
+        Respects agent decisions and system state.
+        """
         answer = state.get("answer", "")
-        if any(phrase in answer for phrase in ["blocked", "error", "failed"]):
+        
+        # Don't refine if there are critical errors or blocks
+        if any(phrase in answer for phrase in ["blocked", "error", "failed", "violation"]):
             return "finish"
         
+        # Respect the QualityEvaluator agent's autonomous decision
         if state.get("needs_refinement", False):
             return "refine"
         else:
@@ -73,10 +95,14 @@ class AgenticRAGWorkflow:
     def update_retriever(self, retriever):
         """Update the retriever for all agents"""
         self.retriever = retriever
-        self.agents.retriever = retriever
+        self.agent_system.update_retriever(retriever)
+    
+    def get_agent_metrics(self):
+        """Get performance metrics from all agents"""
+        return self.agent_system.get_system_metrics()
     
     def invoke(self, initial_state: AgentState) -> AgentState:
-        """Execute the complete agentic workflow"""
+        """Execute the complete multi-agent workflow"""
         if not self.app:
             raise ValueError("Workflow not properly initialized")
         
@@ -86,33 +112,42 @@ class AgenticRAGWorkflow:
         except Exception as e:
             return {
                 **initial_state,
-                "answer": f"⚠️ Workflow execution failed: {str(e)}",
+                "answer": f"⚠️ Multi-agent workflow execution failed: {str(e)}",
                 "evaluation_feedback": "System error occurred",
                 "needs_refinement": False
             }
     
     def get_workflow_visualization(self) -> str:
-        """Return a text representation of the workflow"""
+        """Return a text representation of the multi-agent workflow"""
         return """
-        🤖 Agentic RAG Workflow:
+        🤖 Multi-Agent RAG Workflow Architecture:
         
-        1. 🛡️  Input Guard      → Security validation
-        2. ✏️  Query Rewrite    → Optimization for retrieval  
-        3. 🔍 Document Retrieve → Vector similarity search
-        4. 🧠 Answer Generate   → Context-based response
-        5. ✅ Grounding Check  → Accuracy validation
-        6. 📊 Evaluate Answer  → Quality assessment
-           ↩️  [Refinement Loop] → Back to step 2 if needed
-        7. 🛡️  Output Guard     → Final safety check
-        8. 💭 Memory Update    → History management
-        
-        ✨ Features:
-        • Up to 2 refinement iterations
+        Each node is an INDEPENDENT AGENT with its own:
+        • Dedicated LLM instance
+        • Specialized configuration
         • Autonomous decision-making
-        • Quality-driven improvements
-        • Comprehensive safety controls
+        • Performance tracking
+        
+        WORKFLOW:
+        1. 🛡️  SecurityGuard      → Threat detection (GPT-4o, T=0.1)
+        2. ✏️  QueryOptimizer     → NLP optimization (GPT-4o, T=0.4)
+        3. 🔍 DocumentRetriever  → Vector search (GPT-3.5, T=0.0)
+        4. 🧠 AnswerGenerator    → Deep reasoning (GPT-4o, T=0.3)
+        5. ✅ GroundingValidator → Fact-checking (GPT-4o, T=0.1)
+        6. 📊 QualityEvaluator   → Metacognition (GPT-4o, T=0.2)
+           ↩️  [Autonomous Refinement Loop] → Back to step 2
+        7. 🛡️  OutputGuard        → Final safety (GPT-4o, T=0.1)
+        8. 💭 MemoryManager      → Context management (GPT-3.5, T=0.0)
+        
+        ✨ Multi-Agent Features:
+        • 8 independent agents with specialized models
+        • Inter-agent communication system
+        • Autonomous refinement decisions
+        • Real-time performance metrics
+        • Confidence scoring per agent
+        • Decision history tracking
         """
 
-def create_workflow(retriever=None) -> AgenticRAGWorkflow:
-    """Create and return a configured workflow instance"""
-    return AgenticRAGWorkflow(retriever)
+def create_workflow(retriever=None) -> MultiAgentRAGWorkflow:
+    """Create and return a configured multi-agent workflow instance"""
+    return MultiAgentRAGWorkflow(retriever)
