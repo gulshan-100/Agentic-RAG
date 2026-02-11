@@ -66,25 +66,25 @@ The app will open at `http://localhost:8501` (local) or your Streamlit Cloud URL
 
 ```mermaid
 graph TD
-    A[User Query] --> B[Input Guard Agent]
+    A[User Query] --> B[Input Guard Node]
     B --> C{Query Safe?}
-    C -->|Yes| D[Query Rewriter Agent]
+    C -->|Yes| D[Query Rewriter Node]
     C -->|No| E[❌ Rejected Query]
     
-    D --> F[Document Retriever Agent]
+    D --> F[Document Retriever Node]
     F --> G[Vector Store Search]
     G --> H[Retrieved Documents]
     
-    H --> I[Answer Generator Agent]
+    H --> I[Answer Generator Node]
     I --> J[Generated Answer]
     
-    J --> K[Grounding Check Agent]
+    J --> K[Grounding Check Node]
     K --> L{Answer Grounded?}
-    L -->|Yes| M[Answer Evaluator Agent]
+    L -->|Yes| M[Answer Evaluator Node]
     L -->|No| N[❌ Ungrounded Answer]
     
     M --> O{Good Quality?}
-    O -->|Yes| P[Output Guard Agent]
+    O -->|Yes| P[Output Guard Node]
     O -->|No| Q{Max Iterations?}
     
     Q -->|No| R[Refine Query]
@@ -92,7 +92,7 @@ graph TD
     Q -->|Yes| S[❌ Max Attempts Reached]
     
     P --> T{Output Safe?}
-    T -->|Yes| U[Memory Manager Agent]
+    T -->|Yes| U[Memory Manager Node]
     T -->|No| V[❌ Unsafe Output]
     
     U --> W[Update Conversation History]
