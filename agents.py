@@ -248,9 +248,10 @@ class QueryOptimizerAgent(BaseAgent):
             self.log_decision(f"rewrote_query: {rewritten_question[:50]}...", confidence)
             state = self.update_confidence(state, confidence)
             
-            # Notify retriever agent about the optimized query
+            # Notify retriever agent about the optimized query with iteration number
+            iteration = state.get('iteration_count', 0)
             state = self.send_message(state, "DocumentRetriever", 
-                                    f"Optimized query ready: {rewritten_question[:100]}")
+                                    f"Iteration {iteration} - Optimized query: {rewritten_question[:100]}")
             
             self.performance_metrics["successes"] += 1
         except Exception as e:

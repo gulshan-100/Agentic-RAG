@@ -39,50 +39,125 @@ Eight independent agents, each with dedicated LLM instance and specialized confi
 
 ### Workflow Diagram
 
-```mermaid
-graph TD
-    Start([User Query]) --> A[SecurityGuard Agent<br/>GPT-4o T=0.1]
-    A -->|Safe| B[QueryOptimizer Agent<br/>GPT-4o T=0.4]
-    A -->|Threat| Reject([❌ Query Blocked])
-    
-    B --> C[DocumentRetriever Agent<br/>GPT-3.5 T=0.0]
-    C -->|FAISS Search| D[(Vector Store)]
-    D --> E[AnswerGenerator Agent<br/>GPT-4o T=0.3]
-    
-    E --> F[GroundingValidator Agent<br/>GPT-4o T=0.1]
-    F -->|Validated| G[QualityEvaluator Agent<br/>GPT-4o T=0.2]
-    F -->|Invalid| Reject2([❌ Ungrounded Answer])
-    
-    G -->|Quality OK| H[OutputGuard Agent<br/>GPT-4o T=0.1]
-    G -->|Needs Refinement| I{Iterations < 2?}
-    
-    I -->|Yes| B
-    I -->|No| H
-    
-    H -->|Safe| J[MemoryManager Agent<br/>GPT-3.5 T=0.0]
-    H -->|Unsafe| Reject3([❌ Output Blocked])
-    
-    J --> End([✅ Response to User])
-    
-    style Start fill:#e3f2fd
-    style End fill:#c8e6c9
-    style Reject fill:#ffcdd2
-    style Reject2 fill:#ffcdd2
-    style Reject3 fill:#ffcdd2
-    style D fill:#fff9c4
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         USER QUERY                                   │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+                             ▼
+                    ┌─────────────────────┐
+                    │  SecurityGuard      │
+                    │  GPT-4o (T=0.1)     │
+                    │  Threat Detection   │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────┴──────────┐
+                    │    Safe?            │
+                ┌───┤                     ├───┐
+            YES │   └─────────────────────┘   │ NO
+                │                             ▼
+                ▼                      ❌ Query Blocked
+        ┌─────────────────────┐
+        │  QueryOptimizer      │
+        │  GPT-4o (T=0.4)      │◄───────┐ Refinement
+        │  Query Enhancement   │        │ Loop (Max 2x)
+        └──────────┬───────────┘        │
+                   │                     │
+                   ▼                     │
+        ┌─────────────────────┐         │
+        │  DocumentRetriever   │         │
+        │  GPT-3.5 (T=0.0)     │         │
+        │  FAISS Vector Search │         │
+        └──────────┬───────────┘         │
+                   │                     │
+                   ▼                     │
+        ┌─────────────────────┐         │
+        │  AnswerGenerator     │         │
+        │  GPT-4o (T=0.3)      │         │
+        │  Answer Synthesis    │         │
+        └──────────┬───────────┘         │
+                   │                     │
+                   ▼                     │
+        ┌─────────────────────┐         │
+        │  GroundingValidator  │         │
+        │  GPT-4o (T=0.1)      │         │
+        │  Fact Checking       │         │
+        └──────────┬───────────┘         │
+                   │                     │
+        ┌──────────┴──────────┐          │
+        │   Grounded?         │          │
+    ┌───┤                     ├───┐      │
+YES │   └─────────────────────┘   │ NO   │
+    │                             ▼      │
+    ▼                      ❌ Invalid     │
+┌─────────────────────┐                  │
+│  QualityEvaluator    │                  │
+│  GPT-4o (T=0.2)      │                  │
+│  Quality Assessment  │                  │
+└──────────┬───────────┘                  │
+           │                              │
+┌──────────┴──────────┐                   │
+│  Quality OK?        │                   │
+├─────────┬───────────┤                   │
+│ YES     │ REFINE    │───────────────────┘
+│         └───────────┘
+▼
+┌─────────────────────┐
+│  OutputGuard         │
+│  GPT-4o (T=0.1)      │
+│  Safety Validation   │
+└──────────┬───────────┘
+           │
+┌──────────┴──────────┐
+│      Safe?          │
+├───────┬─────────────┤
+│ YES   │ NO          │
+│       ▼             │
+│   ❌ Blocked        │
+▼                     
+┌─────────────────────┐
+│  MemoryManager      │
+│  GPT-3.5 (T=0.0)    │
+│  History Update     │
+└──────────┬──────────┘
+           │
+           ▼
+    ┌─────────────┐
+    │   ✅ USER   │
+    │  RESPONSE   │
+    └─────────────┘
 ```
 
-**Flow Explanation:**
-1. **SecurityGuard** validates input safety
-2. **QueryOptimizer** enhances query for better retrieval
-3. **DocumentRetriever** searches FAISS vector store
-4. **AnswerGenerator** synthesizes answer from retrieved context
-5. **GroundingValidator** checks answer accuracy against source
-6. **QualityEvaluator** assesses quality & decides on refinement
-7. **Refinement Loop** (up to 2 iterations if needed)
-8. **OutputGuard** performs final safety check
-9. **MemoryManager** updates conversation history
+**Agent Communication Flow:**
+```
+Iteration 0:
+  QueryOptimizer ────────► DocumentRetriever: "Iteration 0 - Optimized query: [query]"
+  DocumentRetriever ─────► AnswerGenerator: "Retrieved 5 documents"
+  AnswerGenerator ───────► GroundingValidator: "Iteration 0 - Generated answer: [preview]"
+  QualityEvaluator ──────► QueryOptimizer: "Requesting refinement" (if needed)
 
+Iteration 1 (if refinement needed):
+  QueryOptimizer ────────► DocumentRetriever: "Iteration 1 - Optimized query: [refined query]"
+  DocumentRetriever ─────► AnswerGenerator: "Retrieved 5 documents"
+  AnswerGenerator ───────► GroundingValidator: "Iteration 1 - Generated answer: [improved preview]"
+  QualityEvaluator ──────► OutputGuard: "Answer approved"
+  
+OutputGuard ─────────────► MemoryManager: "Output approved"
+```
+**Example: Query & Answer Evolution Across Iterations**
+```
+User Question: "How many job openings are there?"
+
+Iteration 0:
+├─ Query: "total number of job openings vacancies positions available"
+├─ Answer: "The total number of vacancies is 1,815 for Constables..."
+└─ Evaluator: Requests refinement for broader context
+
+Iteration 1:
+├─ Query: "aggregate count employment opportunities job vacancies open positions"
+├─ Answer: "1,815 vacancies as specified in the government notification..."
+└─ Evaluator: Approved ✓
+```
 ### Inter-Agent Communication
 Agents coordinate via message passing:
 ```
@@ -97,8 +172,9 @@ OutputGuard → MemoryManager: "Output approved"
 - **Independent LLM Instances**: Each agent has its own `ChatOpenAI` object
 - **Inter-Agent Communication**: Message passing system for coordination
 - **Autonomous Decision-Making**: Each agent evaluates independently
-- **Iterative Refinement**: Up to 2 automatic refinement loops
+- **Iterative Refinement**: Up to 2 automatic refinement loops with query evolution tracking
 - **Performance Tracking**: Real-time metrics per agent
+- **Full Transparency**: See queries and answers evolve across iterations
 
 ## 🛠️ Tech Stack
 
@@ -126,6 +202,7 @@ OutputGuard → MemoryManager: "Output approved"
 2. Wait for vector store processing
 3. Ask questions about your documents
 4. View agent metrics and communications in real-time
+5. See how queries and answers evolve across refinement iterations
 
 ## ⚙️ Configuration
 
