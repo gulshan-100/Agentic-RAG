@@ -124,24 +124,66 @@ class VectorStoreManager:
         self._initialize_embeddings()
     
     def _initialize_embeddings(self):
-        """Initialize OpenAI embeddings"""
+        """Initialize OpenAI embeddings with proper error handling"""
         try:
+            # Try multiple sources for API key
+            api_key = None
+            
+            # Try environment variable
             api_key = os.getenv("OPENAI_API_KEY")
+            
+            # Try Streamlit secrets for cloud deployment
             if not api_key:
-                raise ValueError("OPENAI_API_KEY not set")
+                try:
+                    api_key = st.secrets.get("OPENAI_API_KEY")
+                except:
+                    pass
+            
+            # Try from Config class
+            if not api_key:
+                from config import Config
+                api_key = Config.OPENAI_API_KEY
+            
+            if not api_key or api_key.startswith("your-"):
+                st.error("❌ OpenAI API key not configured. Please set OPENAI_API_KEY in Streamlit secrets or environment variables.")
+                st.info("For Streamlit Cloud: Go to your app settings and add OPENAI_API_KEY to secrets")
+                self.embeddings = None
+                return False
+                
+            # Set environment variable for OpenAI client
+            os.environ["OPENAI_API_KEY"] = api_key
                 
             self.embeddings = OpenAIEmbeddings(
                 model="text-embedding-3-large",
                 api_key=api_key
             )
+            
+            # Test the embeddings with a simple query
+            test_result = self.embeddings.embed_query("test")
+            if test_result:
+                return True
+            else:
+                st.error("Failed to validate embeddings")
+                self.embeddings = None
+                return False
+                
         except Exception as e:
-            st.error(f"Failed to initialize embeddings: {str(e)}")
+            st.error(f"❌ Failed to initialize embeddings: {str(e)}")
+            st.info("Please check your OpenAI API key configuration")
+            self.embeddings = None
+            return False
     
     def build_vectorstore(self, chunks: List[Document]) -> bool:
         """Build FAISS vector store from document chunks"""
         if not chunks:
             st.error("No document chunks to process")
             return False
+        
+        # Check if embeddings are properly initialized
+        if self.embeddings is None:
+            st.error("❌ Embeddings not initialized. Cannot build vector store.")
+            if not self._initialize_embeddings():
+                return False
             
         try:
             with st.spinner("Building vector store..."):

@@ -1,10 +1,10 @@
 # 🤖 Agentic RAG System
 
-A sophisticated multi-agent Retrieval-Augmented Generation system with Streamlit interface. Upload documents and ask questions - the system processes your queries through 8 specialized AI agents for intelligent, accurate responses.
+A sophisticated collaborative AI Retrieval-Augmented Generation system with Streamlit interface. Upload documents and ask questions - the system processes your queries through 8 specialized AI agents for intelligent, accurate responses.
 
 ## 🌟 Features
 
-- **Multi-Agent Architecture**: 8 AI agents working together (input validation, query optimization, document retrieval, answer generation, quality evaluation, safety checks)
+- **Orchestrated AI Architecture**: 8 AI agents working together (input validation, query optimization, document retrieval, answer generation, quality evaluation, safety checks)
 - **Iterative Refinement**: System automatically improves answers through self-evaluation (up to 2 iterations)
 - **Multiple Document Types**: PDF, DOCX, PPTX, TXT, XLSX support
 - **FAISS Vector Search**: High-performance semantic similarity matching
@@ -19,17 +19,39 @@ pip install -r requirements.txt
 ```
 
 ### 2. Set OpenAI API Key
+
+#### For Local Development:
 Create a `.env` file in the project root:
 ```bash
 OPENAI_API_KEY=your-openai-api-key-here
 ```
+
+#### For Streamlit Cloud Deployment:
+1. Go to your Streamlit Cloud app dashboard
+2. Click on your app settings 
+3. Navigate to "Secrets" section
+4. Add the following:
+```toml
+OPENAI_API_KEY = "your-openai-api-key-here"
+```
+
 *Get your API key from: https://platform.openai.com/api-keys*
 
 ### 3. Run the Application
+
+#### Locally:
 ```bash
 streamlit run app.py
 ```
-The app will open at `http://localhost:8501`
+
+#### Deploy to Streamlit Cloud:
+1. Push your code to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Connect your GitHub repository
+4. Set the main file as `app.py`
+5. Add your OpenAI API key to secrets (as shown above)
+
+The app will open at `http://localhost:8501` (local) or your Streamlit Cloud URL
 
 ## 📖 How to Use
 
@@ -64,13 +86,27 @@ Edit `config.py` to customize:
 
 ## 🐛 Troubleshooting
 
-**API Key Issues**: Ensure OpenAI API key is properly configured in environment variables
+**API Key Issues**: 
+- Ensure OpenAI API key is properly configured in environment variables or Streamlit secrets
+- For Streamlit Cloud: Add `OPENAI_API_KEY` to app secrets (not environment variables)
+- Verify your API key has sufficient credits and permissions
 
-**Dependency Issues**: Verify all required packages are installed correctly
+**Embedding Errors ('NoneType' object has no attribute 'embed_documents')**:
+- This indicates the OpenAI API key is not loaded properly
+- Check that your API key is added to Streamlit Cloud secrets
+- Ensure the key doesn't start with "your-" (placeholder text)
 
-**Document Loading Problems**: Check that file formats are supported and files are accessible
+**Dependency Issues**: 
+- Verify all required packages are installed correctly
+- For cloud deployment, ensure `requirements.txt` is in the root directory
 
-**Performance Issues**: Large documents may require longer processing time for vector database creation
+**Document Loading Problems**: 
+- Check that file formats are supported and files are accessible
+- Verify uploaded files are not corrupted
+
+**Performance Issues**: 
+- Large documents may require longer processing time for vector database creation
+- Consider splitting very large documents into smaller sections
 
 ## 📋 Example Questions
 

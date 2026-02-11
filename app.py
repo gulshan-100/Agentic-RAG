@@ -1,6 +1,6 @@
 """
 Streamlit Web Interface for Agentic RAG System
-A user-friendly interface for the multi-agent RAG application
+A user-friendly interface for the orchestrated AI RAG application
 """
 
 import streamlit as st
@@ -44,7 +44,7 @@ def main():
     # App header
     st.title("🤖 Agentic RAG System")
     st.markdown("""
-    A sophisticated multi-agent Retrieval-Augmented Generation system with autonomous decision-making, 
+    A sophisticated orchestrated AI Retrieval-Augmented Generation system with autonomous decision-making, 
     multi-step reasoning, and quality validation.
     """)
     
@@ -225,7 +225,7 @@ def welcome_screen():
     st.markdown("""
     ## 🚀 Welcome to Agentic RAG System
     
-    This advanced AI system uses **multi-agent architecture** to provide intelligent, context-aware responses to your questions.
+    This advanced AI system uses **orchestrated AI architecture** to provide intelligent, context-aware responses to your questions.
     
     ### 🌟 Key Features:
     - **8-Agent Pipeline**: Input validation, query optimization, retrieval, generation, evaluation, and safety
@@ -240,7 +240,7 @@ def welcome_screen():
     3. **Start asking questions** about your documents
     
     ### 🤖 How It Works:
-    The system uses a sophisticated multi-agent workflow that processes your questions through multiple AI agents, each specialized for specific tasks like security validation, query optimization, document retrieval, answer generation, and quality evaluation.
+    The system uses a sophisticated orchestrated workflow that processes your questions through multiple AI agents, each specialized for specific tasks like security validation, query optimization, document retrieval, answer generation, and quality evaluation.
     """)
     
     # Example questions

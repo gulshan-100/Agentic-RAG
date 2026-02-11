@@ -1,6 +1,6 @@
 """
 Workflow management using LangGraph for the Agentic RAG System
-Orchestrates the multi-agent pipeline with conditional logic and iterative refinement
+Orchestrates the coordinated AI pipeline with conditional logic and iterative refinement
 """
 
 from langgraph.graph import StateGraph, END

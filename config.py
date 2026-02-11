@@ -9,8 +9,24 @@ from typing import List
 class Config:
     """Configuration class for the RAG application"""
     
-    # OpenAI Configuration
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your-openai-api-key-here")
+    # OpenAI Configuration - Support both environment and Streamlit secrets
+    @classmethod
+    def get_openai_key(cls):
+        """Get OpenAI API key from environment or Streamlit secrets"""
+        # Try environment variable first
+        key = os.getenv("OPENAI_API_KEY")
+        
+        # Try Streamlit secrets for cloud deployment
+        if not key:
+            try:
+                import streamlit as st
+                key = st.secrets.get("OPENAI_API_KEY")
+            except:
+                pass
+        
+        return key
+    
+    OPENAI_API_KEY = get_openai_key.__func__()
     
     # Model Configuration
     EMBEDDING_MODEL = "text-embedding-3-large"
@@ -55,7 +71,7 @@ class Config:
     # Streamlit Configuration
     APP_TITLE = "🤖 Agentic RAG System"
     APP_DESCRIPTION = """
-    A sophisticated multi-agent Retrieval-Augmented Generation system that demonstrates 
+    A sophisticated orchestrated AI Retrieval-Augmented Generation system that demonstrates 
     true agentic behavior through autonomous decision-making, multi-step reasoning, and quality validation.
     """
     
@@ -66,7 +82,8 @@ class Config:
     @classmethod
     def validate_api_key(cls) -> bool:
         """Validate if OpenAI API key is set"""
-        return cls.OPENAI_API_KEY and not cls.OPENAI_API_KEY.startswith("your-")
+        key = cls.get_openai_key()
+        return key and not key.startswith("your-")
     
     @classmethod
     def get_upload_path(cls) -> str:
@@ -78,8 +95,10 @@ class Config:
 # Environment setup avoid exposing API keys
 def setup_environment():
     """Setup environment variables if not set"""
-    if not Config.OPENAI_API_KEY or Config.OPENAI_API_KEY.startswith("your-"):
-        print("⚠️  Warning: Please set your OPENAI_API_KEY in environment variables or .env file")
+    key = Config.get_openai_key()
+    if not key or key.startswith("your-"):
+        print("⚠️  Warning: Please set your OPENAI_API_KEY in environment variables, .env file, or Streamlit secrets")
         print("   You can set it by: export OPENAI_API_KEY='your-actual-api-key'")
+        print("   For Streamlit Cloud: Add OPENAI_API_KEY to your app secrets")
         return False
     return True
