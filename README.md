@@ -31,7 +31,7 @@ streamlit run app.py
 
 ## 🏗️ Architecture
 
-![Multi-Agent Architecture Diagram](architecture_diagram.png)
+![Multi-Agent Architecture Diagram](architecture_diagram.jpg)
 
 ### Multi-Agent System
 Eight independent agents with specialized roles:
