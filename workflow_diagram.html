@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>8-Agent RAG Workflow Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: white;
+        }
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>8-Agent RAG Workflow Architecture</h1>
+    <div class="mermaid">
+        graph TD
+            %% 8 Agent Nodes
+            A[🛡️ SecurityGuard<br/>Threat Detection<br/>GPT-4o T=0.1] --> B[✏️ QueryOptimizer<br/>NLP Optimization<br/>GPT-4o T=0.4]
+            
+            B --> C[🔍 DocumentRetriever<br/>Vector Search<br/>GPT-3.5 T=0.0]
+            
+            C --> D[🧠 AnswerGenerator<br/>Deep Reasoning<br/>GPT-4o T=0.3]
+            
+            D --> E[✅ GroundingValidator<br/>Fact Checking<br/>GPT-4o T=0.1]
+            
+            E --> F[📊 QualityEvaluator<br/>Metacognition<br/>GPT-4o T=0.2]
+            
+            %% Conditional Decision Point
+            F --> G{Needs Refinement?}
+            
+            %% Iteration Loop
+            G -->|refine| B
+            G -->|finish| H[🛡️ OutputGuard<br/>Final Safety<br/>GPT-4o T=0.1]
+            
+            H --> I[💭 MemoryManager<br/>Context Management<br/>GPT-3.5 T=0.0]
+            
+            I --> J[END]
+            
+            %% Agent Communication Lines
+            B -.->|feedback| F
+            F -.->|refinement signals| B
+            
+            %% Styling
+            classDef agent fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+            classDef decision fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+            classDef endpoint fill:#fce4ec,stroke:#e91e63,stroke-width:2px
+            
+            class A,B,C,D,E,F,H,I agent
+            class G decision
+            class J endpoint
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'default',
+            flowchart: { 
+                useMaxWidth: true, 
+                htmlLabels: true 
+            } 
+        });
+    </script>
+</body>
+</html>

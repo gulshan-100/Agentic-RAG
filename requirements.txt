@@ -1,3 +1,16 @@
+# ================================================================================================
+# SYSTEM DEPENDENCIES REQUIRED (Install before pip install):
+# 1. Poppler (for pdf2image): 
+#    - Windows: Download from https://github.com/oschwartz10612/poppler-windows/releases/
+#              Add bin/ folder to PATH
+#    - Mac: brew install poppler
+#    - Linux: apt-get install poppler-utils
+# 2. Tesseract OCR (optional, for OCR in images):
+#    - Windows: https://github.com/UB-Mannheim/tesseract/wiki
+#    - Mac: brew install tesseract
+#    - Linux: apt-get install tesseract-ocr
+# ================================================================================================
+
 # Core Dependencies
 streamlit>=1.28.0
 langchain>=0.0.350
@@ -6,6 +19,7 @@ langchain-community>=0.0.10
 langchain-core>=0.1.0
 langchain-text-splitters>=0.0.1
 langgraph>=0.0.20
+ollama>=0.1.0
 
 # Vector Store & Search
 faiss-cpu>=1.7.4
@@ -18,6 +32,13 @@ unstructured>=0.10.25
 openpyxl>=3.1.2
 pandas>=2.0.0
 
+# Multimodal RAG - Image & Table Processing
+pdf2image>=1.16.3
+Pillow>=10.0.0
+pytesseract>=0.3.10
+openai>=1.0.0
+pymupdf>=1.23.0
+
 # Environment Variables
 python-dotenv>=1.0.0
 
@@ -27,3 +48,8 @@ python-magic>=0.4.27; platform_system != "Windows"
 
 # Optional: For better performance
 sentence-transformers>=2.2.2
+
+# Multimodal Embeddings (CLIP for fast image processing)
+transformers>=4.35.0
+torch>=2.0.0
+torchvision>=0.15.0

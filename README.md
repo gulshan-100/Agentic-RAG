@@ -6,6 +6,26 @@ A truly multi-agentic AI Retrieval-Augmented Generation system where each agent 
 
 ## 🚀 Quick Start
 
+### Prerequisites
+For full multimodal capabilities, install system dependencies:
+
+**Windows:**
+1. **Poppler** (for PDF image extraction)
+   - Download from: https://github.com/oschwartz10612/poppler-windows/releases/
+   - Extract and add `bin/` folder to your system PATH
+2. **Tesseract OCR** (optional, for image text extraction)
+   - Download from: https://github.com/UB-Mannheim/tesseract/wiki
+
+**Mac:**
+```bash
+brew install poppler tesseract
+```
+
+**Linux:**
+```bash
+sudo apt-get install poppler-utils tesseract-ocr
+```
+
 ### Installation
 ```bash
 pip install -r requirements.txt
@@ -177,6 +197,112 @@ OutputGuard → MemoryManager: "Output approved"
 - **Iterative Refinement**: Up to 2 automatic refinement loops with query evolution tracking
 - **Performance Tracking**: Real-time metrics per agent
 - **Full Transparency**: See queries and answers evolve across iterations
+- **🎯 Multimodal Intelligence**: Advanced image and table understanding
+
+## 🖼️ Multimodal RAG Capabilities
+
+### Fast CLIP-Based Image Processing ⚡
+The system now uses **CLIP (Contrastive Language-Image Pre-Training)** for lightning-fast image embeddings:
+
+**Why CLIP?**
+- ⚡ **Speed**: ~50-200ms per image (vs 5-15 seconds with GPT-4 Vision)
+- 💰 **Cost**: No API costs - runs locally
+- 🎯 **Quality**: State-of-the-art multimodal embeddings
+- 🔍 **Search**: Direct image-text similarity in shared embedding space
+
+**Processing Pipeline:**
+1. **Extraction**: Uses PyMuPDF (fitz) to extract images from PDFs
+2. **Filtering**: Skips small images (logos/icons) - only processes images ≥150px
+3. **CLIP Embedding**: Local CLIP model generates image embeddings (~100ms per image)
+4. **Optional Captions**: GPT-4 Vision can add detailed descriptions (enable via UI checkbox)
+
+**Configuration:**
+```python
+# config.py
+ENABLE_MULTIMODAL = True  # Enable image processing
+USE_CLIP_EMBEDDINGS = True  # Fast CLIP embeddings (default)
+USE_GPT_VISION_CAPTIONS = False  # Optional detailed captions (slower)
+CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"  # Fast & accurate
+```
+
+**Performance Comparison:**
+| Mode | Speed per Image | API Cost | Quality |
+|------|----------------|----------|---------|
+| CLIP Only | 50-200ms | Free | Excellent |
+| GPT-4 Vision | 5-15 seconds | ~$0.03 | Detailed Captions |
+| CLIP + GPT-4V | ~5-15 seconds | ~$0.03 | Best of Both |
+
+**Example:**
+```
+User Query: "What does the system architecture diagram show?"
+
+Retrieved Context:
+[🖼️ IMAGE with CLIP embedding]
+[IMAGE 1 on page 3]: png, 800x600px. Context: Multi-agent architecture 
+settings listed.
+
+Answer: Based on the architecture diagram on page 3, the system uses 
+8 specialized agents...
+```
+
+### Complete Table Extraction
+The system extracts **complete raw tables** without summarization for precise data access:
+
+**Pipeline:**
+1. **Extraction**: 
+   - Excel files: Pandas reads all sheets with full data preservation
+   - PDFs: Pattern matching detects pipe/tab-separated tables
+2. **Structured Format**: Tables converted to readable text format:
+   ```
+   Table: Sales_Data
+   Columns: Product, Q1, Q2, Q3, Q4, Total
+   Product: Widget A; Q1: 150; Q2: 200; Q3: 175; Q4: 225; Total: 750
+   Product: Widget B; Q1: 120; Q2: 180; Q3: 165; Q4: 195; Total: 660
+   ```
+3. **Metadata**: Stores column names, row count, data types
+4. **No Summarization**: Complete tables embedded as-is for accurate value extraction
+5. **Direct Querying**: Answers extract specific values from full table data
+
+**Example:**
+```
+User Query: "What were Widget A sales in Q3?"
+
+Retrieved Context:
+[📋 TABLE]
+Table: Sales_Data
+Columns: Product, Q1, Q2, Q3, Q4, Total
+Product: Widget A; Q1: 150; Q2: 200; Q3: 175; Q4: 225; Total: 750
+Product: Widget B; Q1: 120; Q2: 180; Q3: 165; Q4: 195; Total: 660
+
+Answer: According to the Sales_Data table, Widget A had 175 sales in Q3.
+```
+
+**Benefits:**
+- **Precision**: Exact values extracted from complete data, not summaries
+- **Flexibility**: Can answer any query about the table without information loss
+- **Accuracy**: No summarization = no data loss or distortion
+
+### Multimodal Query Understanding
+The **DocumentRetriever** and **AnswerGenerator** agents are enhanced with multimodal awareness:
+
+- **Query Detection**: Automatically detects when users ask about "images", "diagrams", "tables", "charts"
+- **Content Tagging**: Retrieved chunks tagged with 📋 TABLE or 🖼️ IMAGE indicators
+- **Specialized Responses**: AnswerGenerator uses different strategies for text vs. table vs. image questions
+- **Confidence Boosting**: Retrieval confidence increased when multimodal content is found
+
+### Processing Statistics
+After document upload, view detailed multimodal metrics:
+- **Images Extracted**: Raw images pulled from PDFs
+- **Images Captioned**: Number of GPT-4 Vision API calls
+- **Multimodal Embeddings**: Images prepared for multimodal embedding models
+- **Tables Extracted**: Complete raw tables preserved
+- **Docs with Tables/Images**: Count of documents containing structured data
+
+**Why This Approach:**
+1. **Tables**: No summarization = no information loss, enables precise value extraction
+2. **Images**: Multimodal embeddings allow visual similarity search beyond text captions
+3. **Cost-Efficient**: One-time processing (caption/extract per image/table, not per query)
+4. **Accuracy**: Complete data preserved for exact answers
 
 ## 🛠️ Tech Stack
 
@@ -187,24 +313,69 @@ OutputGuard → MemoryManager: "Output approved"
 - **LangChain** - LLM framework
 
 ### AI/ML
-- **OpenAI GPT-4o** - Advanced reasoning agents
+- **OpenAI GPT-4o** - Advanced reasoning + Vision capabilities
 - **OpenAI GPT-3.5-turbo** - Lightweight utility agents
 - **OpenAI Embeddings** - text-embedding-3-large
 - **FAISS** - Vector similarity search
 
 ### Document Processing
-- **PyPDF** - PDF documents
+- **PyPDF** - PDF text extraction
+- **PyMuPDF (fitz)** - PDF image extraction
+- **pdf2image** - PDF to image conversion
+- **Pillow (PIL)** - Image processing
 - **python-docx** - Word documents
 - **python-pptx** - PowerPoint presentations
 - **openpyxl** - Excel spreadsheets
+- **pandas** - Structured data processing
+
+### Multimodal Processing
+- **GPT-4 Vision (gpt-4o)** - Image understanding and captioning
+- **PyMuPDF** - Image extraction from PDFs
+- **Pillow** - Image format handling
+- **Base64 encoding** - Image transmission to vision API
+- **Multimodal embeddings** - Visual + text embedding support
 
 ## 📖 Usage
 
+### ⚡ Fast Mode vs 🤖 AI Mode
+
+**Fast Mode (Default - Recommended):**
+- ✅ Quick processing: ~5-10 seconds for typical documents
+- ✅ Extracts: Text, tables, document structure
+- ❌ Skips: Image captioning
+- **Use when**: You need quick results or documents don't have important images
+
+**AI Mode (Multimodal):**
+- ✅ Intelligent: GPT-4 Vision captions every image
+- ✅ Extracts: Everything (text, tables, images with descriptions)
+- ⏱️ Slower: Adds ~10-30 seconds per page with images
+- **Use when**: Images contain important information (diagrams, charts, screenshots)
+
+**To enable AI Mode**: Check the **🖼️ Images** checkbox before clicking "Process Files"
+
+### Steps:
+
 1. Upload documents (PDF, DOCX, PPTX, TXT, XLSX)
-2. Wait for vector store processing
-3. Ask questions about your documents
-4. View agent metrics and communications in real-time
-5. See how queries and answers evolve across refinement iterations
+2. **Choose processing mode**: 
+   - ⚡ Fast Mode (uncheck 🖼️ Images) - Quick text & tables
+   - 🤖 AI Mode (check 🖼️ Images) - Full multimodal intelligence
+3. Wait for vector store processing
+   - Text chunks embedded with OpenAI text-embedding-3-large
+   - Tables: Complete raw data extracted and embedded
+   - Images (AI mode): GPT-4 Vision captions + multimodal embedding preparation
+4. Ask questions about your documents
+   - Regular text questions
+   - Table queries: "What's the value in column X?"
+   - Image queries (AI mode): "What does the diagram show?"
+5. View agent metrics and communications in real-time
+6. See how queries and answers evolve across refinement iterations
+
+### Multimodal Embeddings (Advanced)
+Images are stored with both text captions and base64-encoded data for future multimodal embedding:
+- Access via `processor.get_multimodal_image_documents()`
+- Returns list of dicts with: base64 image, GPT-4V caption, metadata, context
+- Can be embedded with models like CLIP, ImageBind, or OpenAI's multimodal embeddings
+- Enables visual similarity search beyond text-based retrieval
 
 ## ⚙️ Configuration
 
@@ -213,6 +384,8 @@ Edit `config.py` for:
 - Embedding model and chunk size
 - Retrieval parameters (K=5, MMR search)
 - Max refinement iterations (default: 2)
+- **Multimodal settings**: `ENABLE_MULTIMODAL`, `MIN_IMAGE_SIZE`, `IMAGE_CAPTION_DETAIL`
+- **Table settings**: `ENABLE_TABLE_EXTRACTION`, `TABLE_SUMMARIZATION` (False for raw data)
 
 ## 📄 License
 
